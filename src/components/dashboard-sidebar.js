@@ -1,217 +1,159 @@
-import { useEffect } from 'react';
-import NextLink from 'next/link';
-import { useRouter } from 'next/router';
-import PropTypes from 'prop-types';
-import { Box, Button, Divider, Drawer, Typography, useMediaQuery } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { ChartBar as ChartBarIcon } from '../icons/chart-bar';
-import { Cog as CogIcon } from '../icons/cog';
-import { Lock as LockIcon } from '../icons/lock';
-import { Selector as SelectorIcon } from '../icons/selector';
-import { ShoppingBag as ShoppingBagIcon } from '../icons/shopping-bag';
-import { User as UserIcon } from '../icons/user';
-import { UserAdd as UserAddIcon } from '../icons/user-add';
-import { Users as UsersIcon } from '../icons/users';
-import { XCircle as XCircleIcon } from '../icons/x-circle';
-import { Logo } from './logo';
-import { NavItem } from './nav-item';
+import { useEffect, useMemo, useState } from "react";
+import NextLink from "next/link";
+import { useRouter } from "next/router";
+import PropTypes from "prop-types";
+import { Box, Button, Divider, Drawer, Typography, useMediaQuery } from "@mui/material";
+import { NavItem } from "./nav-item";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
+import SummarizeIcon from "@mui/icons-material/Summarize";
+import { TextBox as TextBoxIcon } from "../icons/text-box";
+import { userApi } from "src/__api__/user";
+import { DashboardSidebarSection } from "./dashboard-sidebar-section";
 
-const items = [
-  {
-    href: '/',
-    icon: (<ChartBarIcon fontSize="small" />),
-    title: 'Dashboard'
-  },
-  {
-    href: '/customers',
-    icon: (<UsersIcon fontSize="small" />),
-    title: 'Customers'
-  },
-  {
-    href: '/products',
-    icon: (<ShoppingBagIcon fontSize="small" />),
-    title: 'Products'
-  },
-  {
-    href: '/account',
-    icon: (<UserIcon fontSize="small" />),
-    title: 'Account'
-  },
-  {
-    href: '/settings',
-    icon: (<CogIcon fontSize="small" />),
-    title: 'Settings'
-  },
-  {
-    href: '/login',
-    icon: (<LockIcon fontSize="small" />),
-    title: 'Login'
-  },
-  {
-    href: '/register',
-    icon: (<UserAddIcon fontSize="small" />),
-    title: 'Register'
-  },
-  {
-    href: '/404',
-    icon: (<XCircleIcon fontSize="small" />),
-    title: 'Error'
-  }
-];
+const RM = {
+  title: "Menu",
+  items: [
+    {
+      title: "DANH MỤC HỒ SƠ",
+      path: "/qlhs/rm",
+      children: [
+        {
+          title: "Cần xử lý",
+          path: "/qlhs/rm/list",
+          icon: <AccessTimeIcon fontSize="small" />,
+        },
+        {
+          title: "Đang xử lý",
+          path: "/qlhs/rm/handling",
+          icon: <HistoryToggleOffIcon fontSize="small" />,
+        },
+        {
+          title: "Quản trị hồ sơ",
+          path: "/qlhs/rm/manage",
+          icon: <SummarizeIcon fontSize="small" />,
+        },
+      ],
+    },
+  ],
+};
+
+const getSection = () => {
+  const sections = [
+    {
+      title: "Policy",
+      items: [
+        {
+          title: "Vản bản",
+          path: "/eadmin/policy",
+          icon: <TextBoxIcon fontSize="small" />,
+          children: [
+            {
+              title: "Hành chính công văn",
+              path: "/eadmin/policy",
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const fetchApi = async () => {
+    const res = await userApi.getUser();
+    if (res.status == 200) {
+      sessionStorage.setItem("user", JSON.stringify(res.user));
+      if (res.user.role.toLowerCase() == "rm") {
+        return [RM];
+      }
+      if (res.user.role.toLowerCase() == "rmcard") {
+        return [RM];
+      }
+    }
+  };
+  return fetchApi();
+};
+export const activeMenuItemMap = new Map([
+  // RM
+  ["/qlhs/rm/list", "/qlhs/rm/list"],
+  ["/qlhs/rm/add", "/qlhs/rm/list"],
+  ["/qlhs/rm/handling", "/qlhs/rm/handling"],
+  ["/qlhs/rm/details", "/qlhs/rm/handling"],
+  ["/qlhs/rm/manage", "/qlhs/rm/manage"],
+  ["/qlhs/rm/manageDataRecords", "/qlhs/rm/manage"],
+]);
 
 export const DashboardSidebar = (props) => {
   const { open, onClose } = props;
+  const [data, setData] = useState([]);
   const router = useRouter();
-  const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'), {
+  const lgUp = useMediaQuery((theme) => theme.breakpoints.up("lg"), {
     defaultMatches: true,
-    noSsr: false
+    noSsr: false,
   });
 
-  useEffect(
-    () => {
-      if (!router.isReady) {
-        return;
-      }
+  useEffect(() => {
+    getSection().then((data) => setData(data));
+  }, []);
 
-      if (open) {
-        onClose?.();
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router.asPath]
-  );
+  const sections = useMemo(() => data, [data]);
+
+  useEffect(() => {
+    if (!router.isReady) {
+      return;
+    }
+
+    if (open) {
+      onClose?.();
+    }
+  }, [router.asPath]);
 
   const content = (
     <>
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%'
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
         }}
       >
         <div>
           <Box sx={{ p: 3 }}>
-            <NextLink
-              href="/"
-              passHref
-            >
+            <NextLink href="/" passHref>
               <a>
-                <Logo
-                  sx={{
-                    height: 42,
-                    width: 42
+                <img
+                  src="/static/images/vib/logo/logoVIB.png"
+                  style={{
+                    height: 40,
+                    width: 68,
                   }}
                 />
               </a>
             </NextLink>
           </Box>
-          <Box sx={{ px: 2 }}>
-            <Box
-              sx={{
-                alignItems: 'center',
-                backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'space-between',
-                px: 3,
-                py: '11px',
-                borderRadius: 1
-              }}
-            >
-              <div>
-                <Typography
-                  color="inherit"
-                  variant="subtitle1"
-                >
-                  Acme Inc
-                </Typography>
-                <Typography
-                  color="neutral.400"
-                  variant="body2"
-                >
-                  Your tier
-                  {' '}
-                  : Premium
-                </Typography>
-              </div>
-              <SelectorIcon
-                sx={{
-                  color: 'neutral.500',
-                  width: 14,
-                  height: 14
-                }}
-              />
-            </Box>
-          </Box>
         </div>
-        <Divider
-          sx={{
-            borderColor: '#2D3748',
-            my: 3
-          }}
-        />
+
         <Box sx={{ flexGrow: 1 }}>
-          {items.map((item) => (
-            <NavItem
+          {sections?.map((item) => (
+            <DashboardSidebarSection
               key={item.title}
-              icon={item.icon}
-              href={item.href}
-              title={item.title}
+              path={router.pathname}
+              sx={{
+                mt: 2,
+                "& + &": {
+                  mt: 2,
+                },
+              }}
+              {...item}
             />
           ))}
         </Box>
-        <Divider sx={{ borderColor: '#2D3748' }} />
+        <Divider sx={{ borderColor: "#2D3748" }} />
         <Box
           sx={{
             px: 2,
-            py: 3
+            py: 3,
           }}
-        >
-          <Typography
-            color="neutral.100"
-            variant="subtitle2"
-          >
-            Need more features?
-          </Typography>
-          <Typography
-            color="neutral.500"
-            variant="body2"
-          >
-            Check out our Pro solution template.
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              mt: 2,
-              mx: 'auto',
-              width: '160px',
-              '& img': {
-                width: '100%'
-              }
-            }}
-          >
-            <img
-              alt="Go to pro"
-              src="/static/images/sidebar_pro.png"
-            />
-          </Box>
-          <NextLink
-            href="https://material-kit-pro-react.devias.io/"
-            passHref
-          >
-            <Button
-              color="secondary"
-              component="a"
-              endIcon={(<OpenInNewIcon />)}
-              fullWidth
-              sx={{ mt: 2 }}
-              variant="contained"
-            >
-              Pro Live Preview
-            </Button>
-          </NextLink>
-        </Box>
+        ></Box>
       </Box>
     </>
   );
@@ -223,10 +165,10 @@ export const DashboardSidebar = (props) => {
         open
         PaperProps={{
           sx: {
-            backgroundColor: 'neutral.900',
-            color: '#FFFFFF',
-            width: 280
-          }
+            backgroundColor: "neutral.900",
+            color: "#FFFFFF",
+            width: 280,
+          },
         }}
         variant="permanent"
       >
@@ -242,10 +184,10 @@ export const DashboardSidebar = (props) => {
       open={open}
       PaperProps={{
         sx: {
-          backgroundColor: 'neutral.900',
-          color: '#FFFFFF',
-          width: 280
-        }
+          backgroundColor: "neutral.900",
+          color: "#FFFFFF",
+          width: 280,
+        },
       }}
       sx={{ zIndex: (theme) => theme.zIndex.appBar + 100 }}
       variant="temporary"
@@ -257,5 +199,5 @@ export const DashboardSidebar = (props) => {
 
 DashboardSidebar.propTypes = {
   onClose: PropTypes.func,
-  open: PropTypes.bool
+  open: PropTypes.bool,
 };
